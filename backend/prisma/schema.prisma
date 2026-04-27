@@ -1,20 +1,24 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output = "./generated"
+  moduleFormat = "cjs"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-// Example model that can be removed
-model Example {
-  id   Int    @id @default(autoincrement())
-  name String
+// Prisma should convert to UTC under the hood, but I don't want to rely solely on that.
+// So I'm storing it as "timestamp with time zone" on db level.
+model Event {
+  id        String   @id @default(uuid())
+  title     String
+  startTime DateTime @db.Timestamptz
+  endTime   DateTime @db.Timestamptz
+  timezone  String
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@index([startTime, endTime])
 }

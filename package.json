@@ -2,14 +2,13 @@
   "name": "evermore-challenge",
   "private": true,
   "type": "module",
-  "version": "0.0.0",
   "workspaces": [
     "backend",
     "frontend"
   ],
   "scripts": {
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
     "dev:backend": "npm run start:dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend"
   },
