@@ -1,34 +1,47 @@
 import { useQuery } from '@tanstack/react-query';
-import { Typography, Button, Box } from '@mui/material';
+import { Typography, Box } from '@mui/material';
+import { EventCalendar } from '@mui/x-scheduler/event-calendar';
+
+interface BackendEvent {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  timezone: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export function HomeComponent() {
-  const { data, isFetching, error, refetch } = useQuery({
+  const { data: events = [], error } = useQuery<BackendEvent[]>({
     queryKey: ['events'],
     queryFn: async () => {
       const res = await fetch('http://localhost:3000/api/events');
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       return res.json();
     },
-    enabled: false,
   });
 
+  if (error) {
+    return <Typography color="error">Failed to load events: {error.message}</Typography>;
+  }
+
   return (
-    <Box>
-      <Button variant="contained" onClick={() => refetch()} disabled={isFetching}>
-        {isFetching ? 'Fetching…' : 'Fetch Events'}
-      </Button>
-
-      {error && (
-        <Typography color="error" sx={{ mt: 2 }}>
-          Error: {error.message}
-        </Typography>
-      )}
-
-      {data && (
-        <Typography component="pre" sx={{ mt: 2, whiteSpace: 'pre-wrap', fontSize: 14 }}>
-          {JSON.stringify(data, null, 2)}
-        </Typography>
-      )}
-    </Box>
+    <div style={{ height: 'calc(100vh - 64px)', width: '100%' }}>
+      <EventCalendar
+        events={events}
+        eventModelStructure={{
+          start: {
+            getter: (event) => event.startTime,
+            setter: (event, value) => ({ ...event, startTime: value }),
+          },
+          end: {
+            getter: (event) => event.endTime,
+            setter: (event, value) => ({ ...event, endTime: value }),
+          },
+        }}
+      />
+    </div>
   );
 }
+
