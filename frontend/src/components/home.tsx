@@ -75,25 +75,26 @@ export function HomeComponent() {
       const oldMap = new Map(events.map((e) => [e.id, e]));
       const newIds = new Set(updatedEvents.map((e) => e.id));
 
-      // Created: IDs in new list that don't exist in old list
       for (const event of updatedEvents) {
+        // Created: ID in new list that doesn't exist in old list
         if (!oldMap.has(event.id)) {
           createMutation.mutate(event);
+          return; // Stop checking further once we found the change
         }
-      }
 
-      // Updated: IDs in both lists where a property changed
-      for (const event of updatedEvents) {
+        // Updated: ID exists in both lists but a property changed
         const old = oldMap.get(event.id);
         if (old && (old.title !== event.title || old.startTime !== event.startTime || old.endTime !== event.endTime)) {
           updateMutation.mutate(event);
+          return; // Stop checking further once we found the change
         }
       }
 
-      // Deleted: IDs in old list that are missing from new list
+      // Deleted: ID in old list that is missing from new list
       for (const event of events) {
         if (!newIds.has(event.id)) {
           deleteMutation.mutate(event.id);
+          return; // Stop checking further once we found the change
         }
       }
     },
