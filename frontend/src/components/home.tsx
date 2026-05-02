@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Typography } from '@mui/material';
+import { Typography, Snackbar, Alert, type AlertColor } from '@mui/material';
 import { EventCalendar } from '@mui/x-scheduler/event-calendar';
 
 interface BackendEvent {
@@ -13,10 +13,20 @@ interface BackendEvent {
   updatedAt: string;
 }
 
+interface Toast {
+  message: string;
+  severity: AlertColor;
+}
+
 const API_BASE = 'http://localhost:3000/api/events';
 
 export function HomeComponent() {
   const queryClient = useQueryClient();
+  const [toast, setToast] = useState<Toast | null>(null);
+
+  const showToast = (message: string, severity: AlertColor) => {
+    setToast({ message, severity });
+  };
 
   const { data: events = [], error } = useQuery<BackendEvent[]>({
     queryKey: ['events'],
@@ -42,7 +52,11 @@ export function HomeComponent() {
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       return res.json();
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      showToast('Event created', 'success');
+    },
+    onError: (err: Error) => showToast(`Failed to create event: ${err.message}`, 'error'),
   });
 
   const updateMutation = useMutation({
@@ -59,7 +73,11 @@ export function HomeComponent() {
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       return res.json();
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      showToast('Event updated', 'success');
+    },
+    onError: (err: Error) => showToast(`Failed to update event: ${err.message}`, 'error'),
   });
 
   const deleteMutation = useMutation({
@@ -67,7 +85,11 @@ export function HomeComponent() {
       const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      showToast('Event deleted', 'success');
+    },
+    onError: (err: Error) => showToast(`Failed to delete event: ${err.message}`, 'error'),
   });
 
   const handleEventsChange = useCallback(
@@ -79,14 +101,14 @@ export function HomeComponent() {
         // Created: ID in new list that doesn't exist in old list
         if (!oldMap.has(event.id)) {
           createMutation.mutate(event);
-          return; // Stop checking further once we found the change
+          return;
         }
 
         // Updated: ID exists in both lists but a property changed
         const old = oldMap.get(event.id);
         if (old && (old.title !== event.title || old.startTime !== event.startTime || old.endTime !== event.endTime)) {
           updateMutation.mutate(event);
-          return; // Stop checking further once we found the change
+          return;
         }
       }
 
@@ -94,7 +116,7 @@ export function HomeComponent() {
       for (const event of events) {
         if (!newIds.has(event.id)) {
           deleteMutation.mutate(event.id);
-          return; // Stop checking further once we found the change
+          return;
         }
       }
     },
@@ -121,6 +143,23 @@ export function HomeComponent() {
           },
         }}
       />
+      <Snackbar
+        open={toast !== null}
+        autoHideDuration={3000}
+        onClose={() => setToast(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        {toast ? (
+          <Alert
+            onClose={() => setToast(null)}
+            severity={toast.severity}
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {toast.message}
+          </Alert>
+        ) : undefined}
+      </Snackbar>
     </div>
   );
 }
