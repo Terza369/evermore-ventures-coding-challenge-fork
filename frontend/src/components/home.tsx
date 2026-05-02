@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Typography, Snackbar, Alert, Box, type AlertColor } from '@mui/material';
 
@@ -54,9 +54,16 @@ const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 export function HomeComponent() {
   const queryClient = useQueryClient();
+  const calendarRef = useRef<FullCalendar>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const [dialog, setDialog] = useState<DialogState>(DIALOG_CLOSED);
   const [viewingTimezone, setViewingTimezone] = useState(BROWSER_TZ);
+
+  /** Close the dialog and clear the calendar selection placeholder. */
+  const closeDialog = useCallback(() => {
+    setDialog(DIALOG_CLOSED);
+    calendarRef.current?.getApi().unselect();
+  }, []);
 
   const showToast = (message: string, severity: AlertColor) => {
     setToast({ message, severity });
@@ -242,17 +249,17 @@ export function HomeComponent() {
       } else {
         updateMutation.mutate(data);
       }
-      setDialog(DIALOG_CLOSED);
+      closeDialog();
     },
-    [dialog.mode, createMutation, updateMutation],
+    [dialog.mode, createMutation, updateMutation, closeDialog],
   );
 
   const handleDialogDelete = useCallback(
     (id: string) => {
       deleteMutation.mutate(id);
-      setDialog(DIALOG_CLOSED);
+      closeDialog();
     },
-    [deleteMutation],
+    [deleteMutation, closeDialog],
   );
 
   // -----------------------------------------------------------------------
@@ -290,6 +297,7 @@ export function HomeComponent() {
 
       <Box sx={{ height: 'calc(100vh - 120px)', width: '100%' }}>
         <FullCalendar
+          ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, momentTimezonePlugin]}
           initialView="timeGridWeek"
           timeZone={viewingTimezone}
@@ -302,6 +310,7 @@ export function HomeComponent() {
           editable={true}
           selectable={true}
           selectMirror={true}
+          unselectAuto={false}
           select={handleSelect}
           eventClick={handleEventClick}
           eventDrop={handleEventDrop}
@@ -313,7 +322,7 @@ export function HomeComponent() {
       {dialog.open && (
         <EventDialog
           open={true}
-          onClose={() => setDialog(DIALOG_CLOSED)}
+          onClose={closeDialog}
           mode={dialog.mode}
           initialData={dialog.initialData}
           onSave={handleDialogSave}
