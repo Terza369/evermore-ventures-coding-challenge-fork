@@ -10,3 +10,8 @@ services:
          POSTGRES_DB: challenge_db_test
       tmpfs:
          - /var/lib/postgresql/data
+      healthcheck:
+         test: ['CMD', 'pg_isready', '-U', 'test_user']
+         interval: 1s
+         timeout: 5s
+         retries: 30

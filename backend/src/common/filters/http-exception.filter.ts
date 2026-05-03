@@ -1,38 +1,32 @@
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
-  catch(exception: unknown, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
+   catch(exception: unknown, host: ArgumentsHost) {
+      const ctx = host.switchToHttp();
+      const response = ctx.getResponse<Response>();
 
-    let status: HttpStatus;
-    let body: Record<string, unknown>;
+      let status: HttpStatus;
+      let body: Record<string, unknown>;
 
-    if (exception instanceof HttpException) {
-      status = exception.getStatus();
-      const exceptionResponse = exception.getResponse();
+      if (exception instanceof HttpException) {
+         status = exception.getStatus();
+         const exceptionResponse = exception.getResponse();
 
-      if (typeof exceptionResponse === 'string') {
-        body = { statusCode: status, message: exceptionResponse };
+         if (typeof exceptionResponse === 'string') {
+            body = { statusCode: status, message: exceptionResponse };
+         } else {
+            body = { statusCode: status, ...(exceptionResponse as object) };
+         }
       } else {
-        body = { statusCode: status, ...(exceptionResponse as object) };
+         status = HttpStatus.INTERNAL_SERVER_ERROR;
+         body = {
+            statusCode: status,
+            message: 'Internal server error',
+         };
       }
-    } else {
-      status = HttpStatus.INTERNAL_SERVER_ERROR;
-      body = {
-        statusCode: status,
-        message: 'Internal server error',
-      };
-    }
 
-    response.status(status).json(body);
-  }
+      response.status(status).json(body);
+   }
 }

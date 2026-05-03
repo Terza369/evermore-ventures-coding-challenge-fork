@@ -1,5 +1,5 @@
-import type { DateSelectArg, EventClickArg } from "@fullcalendar/core/index.js";
-import type FullCalendar from "@fullcalendar/react";
+import type { DateSelectArg, EventClickArg } from '@fullcalendar/core/index.js';
+import type FullCalendar from '@fullcalendar/react';
 
 export interface BackendEvent {
    id: string;

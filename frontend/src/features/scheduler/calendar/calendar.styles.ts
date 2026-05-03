@@ -37,7 +37,8 @@ export const getCalendarStyles = (theme: Theme): SxProps<Theme> => ({
       letterSpacing: '0.02857em',
       borderRadius: 1,
       boxShadow: theme.shadows[1],
-      transition: 'background-color 250ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1), color 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+      transition:
+         'background-color 250ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1), color 250ms cubic-bezier(0.4, 0, 0.2, 1)',
    },
    '& .fc .fc-button-group > .fc-button': {
       boxShadow: 'none',
@@ -93,7 +94,7 @@ export const getCalendarStyles = (theme: Theme): SxProps<Theme> => ({
          boxShadow: theme.shadows[4],
          transform: 'translateY(-1px)',
          cursor: 'pointer',
-      }
+      },
    },
    '& .fc .fc-timegrid-event': {
       padding: '4px 6px',
@@ -110,5 +111,5 @@ export const getCalendarStyles = (theme: Theme): SxProps<Theme> => ({
    },
    '& .fc-theme-standard .fc-list': {
       borderColor: theme.palette.divider,
-   }
+   },
 });
