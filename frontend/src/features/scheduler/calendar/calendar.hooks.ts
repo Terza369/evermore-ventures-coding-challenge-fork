@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { API_BASE } from '../scheduler.config';
+
 import type { BackendEvent } from './calendar.types';
 
 export function useSchedulerEvents() {

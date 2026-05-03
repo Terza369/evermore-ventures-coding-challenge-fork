@@ -9,7 +9,6 @@ import {
    Stack,
 } from '@mui/material';
 
-import type { EventDialogProps } from './dialog.types';
 import {
    useEventDialog,
    useCreateSchedulerEvent,
@@ -17,6 +16,8 @@ import {
    useDeleteSchedulerEvent,
 } from './dialog.hooks';
 import { useToast } from '../../../components/toast/toast.context';
+
+import type { EventDialogProps } from './dialog.types';
 
 export function EventDialog({ open, onClose, mode, initialData }: EventDialogProps) {
    const { showToast } = useToast();

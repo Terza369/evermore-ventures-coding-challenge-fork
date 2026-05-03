@@ -2,8 +2,9 @@ import { useState, useMemo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { API_BASE } from '../scheduler.config';
-import type { EventFormData } from './dialog.types';
 import { toLocalInput, fromLocalInput } from './dialog.utils';
+
+import type { EventFormData } from './dialog.types';
 
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 

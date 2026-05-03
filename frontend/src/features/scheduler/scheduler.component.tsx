@@ -1,13 +1,15 @@
 import { useCallback, useRef, useState } from 'react';
 import { Typography, Box } from '@mui/material';
-import type { DateSelectArg, EventClickArg } from '@fullcalendar/core';
 import FullCalendar from '@fullcalendar/react';
 
 import { CalendarComponent } from './calendar/calendar.component';
 import { EventDialog } from './dialog/dialog.component';
 import { TimezoneSelector } from './timezone-selector/timezone-selector.component';
 import { useSchedulerEvents } from './calendar/calendar.hooks';
-import { DIALOG_CLOSED, type DialogState } from './dialog/dialog.types';
+import { DIALOG_CLOSED } from './dialog/dialog.types';
+
+import type { DialogState } from './dialog/dialog.types';
+import type { DateSelectArg, EventClickArg } from '@fullcalendar/core';
 
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 

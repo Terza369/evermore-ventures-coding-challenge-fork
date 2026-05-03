@@ -4,21 +4,14 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
-import interactionPlugin from '@fullcalendar/interaction';
+import interactionPlugin, { type EventResizeDoneArg } from '@fullcalendar/interaction';
 import momentTimezonePlugin from '@fullcalendar/moment-timezone';
-import type { DateSelectArg, EventClickArg, EventDropArg } from '@fullcalendar/core';
-import type { EventResizeDoneArg } from '@fullcalendar/interaction';
 
 import { useToast } from '../../../components/toast/toast.context';
 import { useQuickUpdateSchedulerEvent } from './calendar.hooks';
 
-interface CalendarComponentProps {
-   events: any[];
-   viewingTimezone: string;
-   onSelect: (info: DateSelectArg) => void;
-   onEventClick: (info: EventClickArg) => void;
-   calendarRef: React.RefObject<FullCalendar | null>;
-}
+import type { EventDropArg } from '@fullcalendar/core/index.js';
+import type { CalendarComponentProps } from './calendar.types';
 
 export function CalendarComponent({
    events,
