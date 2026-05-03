@@ -8,17 +8,56 @@ import {
   Autocomplete,
   Stack,
 } from '@mui/material';
+
 import type { EventDialogProps } from './dialog.types';
-import { useEventDialog } from './dialog.hooks';
+import { 
+  useEventDialog,
+  useCreateSchedulerEvent, 
+  useUpdateSchedulerEvent, 
+  useDeleteSchedulerEvent 
+} from './dialog.hooks';
+import { useToast } from '../../../components/toast/toast.context';
 
 export function EventDialog({
   open,
   onClose,
   mode,
   initialData,
-  onSave,
-  onDelete,
 }: EventDialogProps) {
+  const { showToast } = useToast();
+
+  const handleSuccess = (msg: string) => {
+    showToast(msg, 'success');
+    onClose();
+  };
+
+  const handleError = (msg: string) => {
+    showToast(msg, 'error');
+  };
+
+  const createMutation = useCreateSchedulerEvent(
+    () => handleSuccess('Event created'),
+    (err) => handleError(`Failed to create event: ${err.message}`)
+  );
+
+  const updateMutation = useUpdateSchedulerEvent(
+    () => handleSuccess('Event updated'),
+    (err) => handleError(`Failed to update event: ${err.message}`)
+  );
+
+  const deleteMutation = useDeleteSchedulerEvent(
+    () => handleSuccess('Event deleted'),
+    (err) => handleError(`Failed to delete event: ${err.message}`)
+  );
+
+  const handleSave = (data: any) => {
+    if (mode === 'create') {
+      createMutation.mutate(data);
+    } else {
+      updateMutation.mutate(data);
+    }
+  };
+
   const {
     timezones,
     title,
@@ -30,7 +69,7 @@ export function EventDialog({
     endLocal,
     setEndLocal,
     handleSubmit,
-  } = useEventDialog(initialData, onSave);
+  } = useEventDialog(initialData, handleSave);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -86,13 +125,10 @@ export function EventDialog({
         </DialogContent>
 
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          {mode === 'edit' && initialData.id && onDelete && (
+          {mode === 'edit' && initialData.id && (
             <Button
               color="error"
-              onClick={() => {
-                onDelete(initialData.id!);
-                onClose();
-              }}
+              onClick={() => deleteMutation.mutate(initialData.id!)}
               sx={{ mr: 'auto' }}
             >
               Delete

@@ -1,5 +1,6 @@
 import { Autocomplete, TextField } from '@mui/material';
 import { useMemo } from 'react';
+
 import type { TimezoneSelectorProps } from './timezone-selector.types';
 
 /**

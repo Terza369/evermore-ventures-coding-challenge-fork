@@ -1,6 +1,10 @@
 import { useState, useMemo } from 'react';
-import type { EventFormData } from '../calendar/calendar.types';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { API_BASE } from '../scheduler.config';
+import type { EventFormData } from './dialog.types';
 import { toLocalInput, fromLocalInput } from './dialog.utils';
+
 
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -60,4 +64,78 @@ export function useEventDialog(
     setEndLocal,
     handleSubmit,
   };
+}
+
+export function useCreateSchedulerEvent(onSuccessCallback?: () => void, onErrorCallback?: (err: Error) => void) {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (data: EventFormData) => {
+      const res = await fetch(API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: data.title,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          timezone: data.timezone,
+        }),
+      });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      if (onSuccessCallback) onSuccessCallback();
+    },
+    onError: (err: Error) => {
+      if (onErrorCallback) onErrorCallback(err);
+    },
+  });
+}
+
+export function useUpdateSchedulerEvent(onSuccessCallback?: () => void, onErrorCallback?: (err: Error) => void) {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (data: EventFormData) => {
+      const res = await fetch(`${API_BASE}/${data.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: data.title,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          timezone: data.timezone,
+        }),
+      });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      if (onSuccessCallback) onSuccessCallback();
+    },
+    onError: (err: Error) => {
+      if (onErrorCallback) onErrorCallback(err);
+    },
+  });
+}
+
+export function useDeleteSchedulerEvent(onSuccessCallback?: () => void, onErrorCallback?: (err: Error) => void) {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      if (onSuccessCallback) onSuccessCallback();
+    },
+    onError: (err: Error) => {
+      if (onErrorCallback) onErrorCallback(err);
+    },
+  });
 }

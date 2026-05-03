@@ -1,27 +1,18 @@
 import { useCallback, useRef, useState } from 'react';
-import { Typography, Snackbar, Alert, Box, type AlertColor } from '@mui/material';
-import type { DateSelectArg, EventClickArg, EventDropArg } from '@fullcalendar/core';
-import type { EventResizeDoneArg } from '@fullcalendar/interaction';
+import { Typography, Box } from '@mui/material';
+import type { DateSelectArg, EventClickArg } from '@fullcalendar/core';
 import FullCalendar from '@fullcalendar/react';
 
 import { CalendarComponent } from './calendar/calendar.component';
 import { EventDialog } from './dialog/dialog.component';
 import { TimezoneSelector } from './timezone-selector/timezone-selector.component';
-import { 
-  useSchedulerEvents, 
-  useCreateSchedulerEvent, 
-  useUpdateSchedulerEvent, 
-  useQuickUpdateSchedulerEvent, 
-  useDeleteSchedulerEvent 
-} from './calendar/calendar.hooks';
-import { DIALOG_CLOSED, type DialogState, type EventFormData, type Toast } from './calendar/calendar.types';
-
+import { useSchedulerEvents } from './calendar/calendar.hooks';
+import { DIALOG_CLOSED, type DialogState } from './dialog/dialog.types';
 
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 export function SchedulerComponent() {
   const calendarRef = useRef<FullCalendar>(null);
-  const [toast, setToast] = useState<Toast | null>(null);
   const [dialog, setDialog] = useState<DialogState>(DIALOG_CLOSED);
   const [viewingTimezone, setViewingTimezone] = useState(BROWSER_TZ);
 
@@ -30,31 +21,7 @@ export function SchedulerComponent() {
     calendarRef.current?.getApi().unselect();
   }, []);
 
-  const showToast = (message: string, severity: AlertColor) => {
-    setToast({ message, severity });
-  };
-
   const { data: events = [], error } = useSchedulerEvents();
-
-  const createMutation = useCreateSchedulerEvent(
-    () => showToast('Event created', 'success'),
-    (err) => showToast(`Failed to create event: ${err.message}`, 'error')
-  );
-
-  const updateMutation = useUpdateSchedulerEvent(
-    () => showToast('Event updated', 'success'),
-    (err) => showToast(`Failed to update event: ${err.message}`, 'error')
-  );
-
-  const quickUpdateMutation = useQuickUpdateSchedulerEvent(
-    () => showToast('Event updated', 'success'),
-    (err) => showToast(`Failed to update event: ${err.message}`, 'error')
-  );
-
-  const deleteMutation = useDeleteSchedulerEvent(
-    () => showToast('Event deleted', 'success'),
-    (err) => showToast(`Failed to delete event: ${err.message}`, 'error')
-  );
 
   const handleSelect = useCallback((info: DateSelectArg) => {
     setDialog({
@@ -83,42 +50,6 @@ export function SchedulerComponent() {
       },
     });
   }, [events]);
-
-  const handleEventDrop = useCallback((info: EventDropArg) => {
-    const start = info.event.start;
-    const end = info.event.end;
-    if (!start || !end) return;
-    quickUpdateMutation.mutate({
-      id: info.event.id,
-      startTime: start.toISOString(),
-      endTime: end.toISOString(),
-    });
-  }, [quickUpdateMutation]);
-
-  const handleEventResize = useCallback((info: EventResizeDoneArg) => {
-    const start = info.event.start;
-    const end = info.event.end;
-    if (!start || !end) return;
-    quickUpdateMutation.mutate({
-      id: info.event.id,
-      startTime: start.toISOString(),
-      endTime: end.toISOString(),
-    });
-  }, [quickUpdateMutation]);
-
-  const handleDialogSave = useCallback((data: EventFormData) => {
-    if (dialog.mode === 'create') {
-      createMutation.mutate(data);
-    } else {
-      updateMutation.mutate(data);
-    }
-    closeDialog();
-  }, [dialog.mode, createMutation, updateMutation, closeDialog]);
-
-  const handleDialogDelete = useCallback((id: string) => {
-    deleteMutation.mutate(id);
-    closeDialog();
-  }, [deleteMutation, closeDialog]);
 
   const calendarEvents = events.map((e) => ({
     id: e.id,
@@ -150,8 +81,6 @@ export function SchedulerComponent() {
         viewingTimezone={viewingTimezone}
         onSelect={handleSelect}
         onEventClick={handleEventClick}
-        onEventDrop={handleEventDrop}
-        onEventResize={handleEventResize}
         calendarRef={calendarRef}
       />
 
@@ -161,28 +90,8 @@ export function SchedulerComponent() {
           onClose={closeDialog}
           mode={dialog.mode}
           initialData={dialog.initialData}
-          onSave={handleDialogSave}
-          onDelete={handleDialogDelete}
         />
       )}
-
-      <Snackbar
-        open={toast !== null}
-        autoHideDuration={3000}
-        onClose={() => setToast(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        {toast ? (
-          <Alert
-            onClose={() => setToast(null)}
-            severity={toast.severity}
-            variant="filled"
-            sx={{ width: '100%' }}
-          >
-            {toast.message}
-          </Alert>
-        ) : undefined}
-      </Snackbar>
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Box } from '@mui/material';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -8,13 +9,14 @@ import momentTimezonePlugin from '@fullcalendar/moment-timezone';
 import type { DateSelectArg, EventClickArg, EventDropArg } from '@fullcalendar/core';
 import type { EventResizeDoneArg } from '@fullcalendar/interaction';
 
+import { useToast } from '../../../components/toast/toast.context';
+import { useQuickUpdateSchedulerEvent } from './calendar.hooks';
+
 interface CalendarComponentProps {
   events: any[];
   viewingTimezone: string;
   onSelect: (info: DateSelectArg) => void;
   onEventClick: (info: EventClickArg) => void;
-  onEventDrop: (info: EventDropArg) => void;
-  onEventResize: (info: EventResizeDoneArg) => void;
   calendarRef: React.RefObject<FullCalendar | null>;
 }
 
@@ -23,10 +25,37 @@ export function CalendarComponent({
   viewingTimezone,
   onSelect,
   onEventClick,
-  onEventDrop,
-  onEventResize,
   calendarRef,
 }: CalendarComponentProps) {
+  const { showToast } = useToast();
+
+  const quickUpdateMutation = useQuickUpdateSchedulerEvent(
+    () => showToast('Event updated', 'success'),
+    (err) => showToast(`Failed to update event: ${err.message}`, 'error')
+  );
+
+  const handleEventDrop = useCallback((info: EventDropArg) => {
+    const start = info.event.start;
+    const end = info.event.end;
+    if (!start || !end) return;
+    quickUpdateMutation.mutate({
+      id: info.event.id,
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
+    });
+  }, [quickUpdateMutation]);
+
+  const handleEventResize = useCallback((info: EventResizeDoneArg) => {
+    const start = info.event.start;
+    const end = info.event.end;
+    if (!start || !end) return;
+    quickUpdateMutation.mutate({
+      id: info.event.id,
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
+    });
+  }, [quickUpdateMutation]);
+
   return (
     <Box sx={{ height: 'calc(100vh - 120px)', width: '100%' }}>
       <FullCalendar
@@ -46,8 +75,8 @@ export function CalendarComponent({
         unselectAuto={false}
         select={onSelect}
         eventClick={onEventClick}
-        eventDrop={onEventDrop}
-        eventResize={onEventResize}
+        eventDrop={handleEventDrop}
+        eventResize={handleEventResize}
         height="100%"
       />
     </Box>
