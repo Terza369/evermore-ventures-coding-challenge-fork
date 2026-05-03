@@ -20,25 +20,33 @@ async function main() {
       {
         title: 'Weekly Sync',
         startTime: new Date(now.getTime() + 1000 * 60 * 60 * 24 * 1), // Tomorrow
-        endTime: new Date(now.getTime() + 1000 * 60 * 60 * 24 * 1 + 1000 * 60 * 60 * 1), // Tomorrow + 1h
+        endTime: new Date(
+          now.getTime() + 1000 * 60 * 60 * 24 * 1 + 1000 * 60 * 60 * 1,
+        ), // Tomorrow + 1h
         timezone: 'Europe/Zagreb',
       },
       {
         title: 'Team Building',
         startTime: new Date(now.getTime() + 1000 * 60 * 60 * 24 * 5),
-        endTime: new Date(now.getTime() + 1000 * 60 * 60 * 24 * 5 + 1000 * 60 * 60 * 3), // + 3h
+        endTime: new Date(
+          now.getTime() + 1000 * 60 * 60 * 24 * 5 + 1000 * 60 * 60 * 3,
+        ), // + 3h
         timezone: 'America/New_York',
       },
       {
         title: 'Client Demo',
         startTime: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-        endTime: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 2 + 1000 * 60 * 60 * 1), // 1 hour duration
+        endTime: new Date(
+          now.getTime() - 1000 * 60 * 60 * 24 * 2 + 1000 * 60 * 60 * 1,
+        ), // 1 hour duration
         timezone: 'Asia/Tokyo',
       },
       {
         title: 'All Hands Meeting',
         startTime: new Date(now.getTime() + 1000 * 60 * 60 * 24 * 10), // 10 days from now
-        endTime: new Date(now.getTime() + 1000 * 60 * 60 * 24 * 10 + 1000 * 60 * 60 * 2),
+        endTime: new Date(
+          now.getTime() + 1000 * 60 * 60 * 24 * 10 + 1000 * 60 * 60 * 2,
+        ),
         timezone: 'Europe/London',
       },
       {
@@ -46,7 +54,7 @@ async function main() {
         startTime: new Date(now.getTime() + 1000 * 60 * 60 * 2), // 2 hours from now
         endTime: new Date(now.getTime() + 1000 * 60 * 60 * 2 + 1000 * 60 * 30), // 30 mins
         timezone: 'Australia/Sydney',
-      }
+      },
     ],
   });
 

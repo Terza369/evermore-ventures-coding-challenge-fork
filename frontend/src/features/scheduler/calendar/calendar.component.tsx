@@ -13,72 +13,84 @@ import { useToast } from '../../../components/toast/toast.context';
 import { useQuickUpdateSchedulerEvent } from './calendar.hooks';
 
 interface CalendarComponentProps {
-  events: any[];
-  viewingTimezone: string;
-  onSelect: (info: DateSelectArg) => void;
-  onEventClick: (info: EventClickArg) => void;
-  calendarRef: React.RefObject<FullCalendar | null>;
+   events: any[];
+   viewingTimezone: string;
+   onSelect: (info: DateSelectArg) => void;
+   onEventClick: (info: EventClickArg) => void;
+   calendarRef: React.RefObject<FullCalendar | null>;
 }
 
 export function CalendarComponent({
-  events,
-  viewingTimezone,
-  onSelect,
-  onEventClick,
-  calendarRef,
+   events,
+   viewingTimezone,
+   onSelect,
+   onEventClick,
+   calendarRef,
 }: CalendarComponentProps) {
-  const { showToast } = useToast();
+   const { showToast } = useToast();
 
-  const quickUpdateMutation = useQuickUpdateSchedulerEvent(
-    () => showToast('Event updated', 'success'),
-    (err) => showToast(`Failed to update event: ${err.message}`, 'error')
-  );
+   const quickUpdateMutation = useQuickUpdateSchedulerEvent(
+      () => showToast('Event updated', 'success'),
+      (err) => showToast(`Failed to update event: ${err.message}`, 'error')
+   );
 
-  const handleEventDrop = useCallback((info: EventDropArg) => {
-    const start = info.event.start;
-    const end = info.event.end;
-    if (!start || !end) return;
-    quickUpdateMutation.mutate({
-      id: info.event.id,
-      startTime: start.toISOString(),
-      endTime: end.toISOString(),
-    });
-  }, [quickUpdateMutation]);
+   const handleEventDrop = useCallback(
+      (info: EventDropArg) => {
+         const start = info.event.start;
+         const end = info.event.end;
+         if (!start || !end) return;
+         quickUpdateMutation.mutate({
+            id: info.event.id,
+            startTime: start.toISOString(),
+            endTime: end.toISOString(),
+         });
+      },
+      [quickUpdateMutation]
+   );
 
-  const handleEventResize = useCallback((info: EventResizeDoneArg) => {
-    const start = info.event.start;
-    const end = info.event.end;
-    if (!start || !end) return;
-    quickUpdateMutation.mutate({
-      id: info.event.id,
-      startTime: start.toISOString(),
-      endTime: end.toISOString(),
-    });
-  }, [quickUpdateMutation]);
+   const handleEventResize = useCallback(
+      (info: EventResizeDoneArg) => {
+         const start = info.event.start;
+         const end = info.event.end;
+         if (!start || !end) return;
+         quickUpdateMutation.mutate({
+            id: info.event.id,
+            startTime: start.toISOString(),
+            endTime: end.toISOString(),
+         });
+      },
+      [quickUpdateMutation]
+   );
 
-  return (
-    <Box sx={{ height: 'calc(100vh - 120px)', width: '100%' }}>
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, momentTimezonePlugin]}
-        initialView="timeGridWeek"
-        timeZone={viewingTimezone}
-        headerToolbar={{
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
-        }}
-        events={events}
-        editable={true}
-        selectable={true}
-        selectMirror={true}
-        unselectAuto={false}
-        select={onSelect}
-        eventClick={onEventClick}
-        eventDrop={handleEventDrop}
-        eventResize={handleEventResize}
-        height="100%"
-      />
-    </Box>
-  );
+   return (
+      <Box sx={{ height: 'calc(100vh - 120px)', width: '100%' }}>
+         <FullCalendar
+            ref={calendarRef}
+            plugins={[
+               dayGridPlugin,
+               timeGridPlugin,
+               listPlugin,
+               interactionPlugin,
+               momentTimezonePlugin,
+            ]}
+            initialView="timeGridWeek"
+            timeZone={viewingTimezone}
+            headerToolbar={{
+               left: 'prev,next today',
+               center: 'title',
+               right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
+            }}
+            events={events}
+            editable={true}
+            selectable={true}
+            selectMirror={true}
+            unselectAuto={false}
+            select={onSelect}
+            eventClick={onEventClick}
+            eventDrop={handleEventDrop}
+            eventResize={handleEventResize}
+            height="100%"
+         />
+      </Box>
+   );
 }

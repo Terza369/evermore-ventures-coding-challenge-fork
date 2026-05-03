@@ -1,4 +1,4 @@
 export interface TimezoneSelectorProps {
-  value: string;
-  onChange: (timezone: string) => void;
+   value: string;
+   onChange: (timezone: string) => void;
 }

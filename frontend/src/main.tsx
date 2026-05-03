@@ -11,26 +11,26 @@ const router = createRouter({ routeTree });
 
 // Register things for typesafety
 declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router;
-  }
+   interface Register {
+      router: typeof router;
+   }
 }
 
 const theme = createTheme({
-  palette: {
-    mode: 'light',
-  },
+   palette: {
+      mode: 'light',
+   },
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <ToastProvider>
-          <RouterProvider router={router} />
-        </ToastProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  </React.StrictMode>
+   <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+         <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <ToastProvider>
+               <RouterProvider router={router} />
+            </ToastProvider>
+         </ThemeProvider>
+      </QueryClientProvider>
+   </React.StrictMode>
 );

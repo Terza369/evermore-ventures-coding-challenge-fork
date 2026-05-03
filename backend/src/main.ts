@@ -26,4 +26,3 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
   const port = config.get<number>('PORT', 3000);
   await app.listen(port);
 })();
-

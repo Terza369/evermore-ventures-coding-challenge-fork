@@ -1,16 +1,16 @@
 version: '3.8'
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: challenge-db
-    ports:
-      - '5432:5432'
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: challenge_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+   postgres:
+      image: postgres:16-alpine
+      container_name: challenge-db
+      ports:
+         - '5432:5432'
+      environment:
+         POSTGRES_USER: user
+         POSTGRES_PASSWORD: password
+         POSTGRES_DB: challenge_db
+      volumes:
+         - postgres_data:/var/lib/postgresql/data
 
 volumes:
-  postgres_data:
+   postgres_data:
