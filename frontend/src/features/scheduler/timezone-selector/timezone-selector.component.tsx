@@ -1,10 +1,6 @@
 import { Autocomplete, TextField } from '@mui/material';
 import { useMemo } from 'react';
-
-interface TimezoneSelectorProps {
-  value: string;
-  onChange: (timezone: string) => void;
-}
+import type { TimezoneSelectorProps } from './timezone-selector.types';
 
 /**
  * A searchable timezone dropdown using all IANA timezones.
