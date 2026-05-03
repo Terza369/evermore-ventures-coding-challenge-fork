@@ -14,12 +14,12 @@ import {
   useQuickUpdateSchedulerEvent, 
   useDeleteSchedulerEvent 
 } from './calendar/calendar.hooks';
-import { DIALOG_CLOSED } from './scheduler.types';
-import type { DialogState, Toast, EventFormData } from './scheduler.types';
+import { DIALOG_CLOSED, type DialogState, type EventFormData, type Toast } from './calendar/calendar.types';
+
 
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-export function RootComponent() {
+export function SchedulerComponent() {
   const calendarRef = useRef<FullCalendar>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const [dialog, setDialog] = useState<DialogState>(DIALOG_CLOSED);
@@ -145,7 +145,7 @@ export function RootComponent() {
         />
       </Box>
 
-      <SchedulerComponent
+      <CalendarComponent
         events={calendarEvents}
         viewingTimezone={viewingTimezone}
         onSelect={handleSelect}

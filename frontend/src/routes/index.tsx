@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { RootComponent } from '../features/scheduler/root.component';
+import { SchedulerComponent } from '../features/scheduler/scheduler.component';
 
 export const Route = createFileRoute('/')({
-  component: RootComponent,
+  component: SchedulerComponent,
 });

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { EventFormData } from '../calendar/calendar.types';
-import { toLocalInput, fromLocalInput } from './date.utils';
+import { toLocalInput, fromLocalInput } from './dialog.utils';
 
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
