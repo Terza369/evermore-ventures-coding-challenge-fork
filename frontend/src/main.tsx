@@ -17,11 +17,7 @@ declare module '@tanstack/react-router' {
    }
 }
 
-const theme = createTheme({
-   palette: {
-      mode: 'light',
-   },
-});
+import { theme } from './lib/theme';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
    <React.StrictMode>

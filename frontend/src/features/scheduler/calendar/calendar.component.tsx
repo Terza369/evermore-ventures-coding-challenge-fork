@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -13,6 +13,8 @@ import { useQuickUpdateSchedulerEvent } from './calendar.hooks';
 import type { EventDropArg } from '@fullcalendar/core/index.js';
 import type { CalendarComponentProps } from './calendar.types';
 
+import { getCalendarStyles } from './calendar.styles';
+
 export function CalendarComponent({
    events,
    viewingTimezone,
@@ -21,6 +23,7 @@ export function CalendarComponent({
    calendarRef,
 }: CalendarComponentProps) {
    const { showToast } = useToast();
+   const theme = useTheme();
 
    const quickUpdateMutation = useQuickUpdateSchedulerEvent(
       () => showToast('Event updated', 'success'),
@@ -56,7 +59,7 @@ export function CalendarComponent({
    );
 
    return (
-      <Box sx={{ height: 'calc(100vh - 120px)', width: '100%' }}>
+      <Box sx={getCalendarStyles(theme)}>
          <FullCalendar
             ref={calendarRef}
             plugins={[
