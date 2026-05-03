@@ -9,11 +9,10 @@ import momentTimezonePlugin from '@fullcalendar/moment-timezone';
 
 import { useToast } from '../../../components/toast/toast.context';
 import { useQuickUpdateSchedulerEvent } from './calendar.hooks';
+import { getCalendarStyles } from './calendar.styles';
 
 import type { EventDropArg } from '@fullcalendar/core/index.js';
 import type { CalendarComponentProps } from './calendar.types';
-
-import { getCalendarStyles } from './calendar.styles';
 
 export function CalendarComponent({
    events,
