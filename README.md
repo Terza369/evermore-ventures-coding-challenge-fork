@@ -1,17 +1,46 @@
-# Evermore Coding Challenge
+A full-stack calendar scheduling application with **weekly recurring events**, conflict detection, and a FullCalendar-based UI with drag-and-drop support.
 
-Welcome to the Evermore coding challenge. This repository is a **Monorepo** managed via NPM Workspaces, containing a frontend application, a backend API, and a dockerized database.
+### Backend (NestJS + Prisma)
 
-This template provides a minimal setup and all the tools you will need for this challenge. Complete as much as you can or have the knowledge for! On the coding interview, we will ask for a quick demo of the challenge, walkthrough of the code and after which we will discuss and challenge your decisions. We might also ask you to extend the solution with some additional features on the call itself! Good luck!
+**API Endpoints:**
 
-## Instructions
+| Method   | Endpoint            | Description                                    |
+| :------- | :------------------ | :--------------------------------------------- |
+| `GET`    | `/api/events`       | List events with optional `from`/`to` filtering |
+| `GET`    | `/api/events/:id`   | Get a single event by UUID                     |
+| `POST`   | `/api/events`       | Create an event (with optional recurrence)     |
+| `PATCH`  | `/api/events/:id`   | Partial update (title, times, recurrence)      |
+| `DELETE` | `/api/events/:id`   | Delete an event                                |
 
-Checkout the repository, install dependencies and run the project.
-Design is entirely up to you, so be as creative as you want; we have prepared MaterialUI, but feel free to pick any framework that you are comfortable with.
-Typescript, TanStack, ReactQuery, and Zustand are included in the project and are encouraged to be used.
-Structure files and components according to the best coding practices that you are familiar with
+**Key Design Decisions:**
 
-Once you are done, submit a Pull Request for a review and discussion
+- **Recurring events are stored as a single DB row** with `recurrenceRule` and `recurrenceEnd` fields. Occurrences are expanded on-the-fly during `GET` queries — no denormalization.
+- **Conflict detection** expands both the new event and all candidate events into their occurrences, then checks for pairwise overlap. This correctly handles recurring-vs-recurring, recurring-vs-single, and single-vs-single conflicts.
+- **Synthetic IDs** for occurrences use the format `{uuid}_{isoDate}`, allowing the frontend to distinguish occurrences from templates.
+- **Validation** uses `class-validator` decorators on DTOs plus custom business rules (`validateTimeRange`, `validateTimezone`, `validateRecurrence`) in a utility module.
+- **UTC arithmetic** throughout — occurrence expansion uses millisecond math instead of `Date.setDate()` to avoid DST edge cases.
+
+### Frontend (React + FullCalendar)
+
+- **Feature-based architecture** under `src/features/scheduler/` with NestJS-style file naming (`.component.tsx`, `.hooks.ts`, `.types.ts`, `.utils.ts`).
+- **FullCalendar** with `@fullcalendar/interaction` for drag-and-drop event moving/resizing, with automatic revert on mutation failure.
+- **MUI Dialog** for event creation/editing with timezone-aware datetime pickers.
+- **React Query** for server state management with optimistic-style date range filtering.
+
+### Testing
+
+```bash
+# Unit tests (generateOccurrences edge cases)
+cd backend && npm test
+
+# E2E tests (full API + DB, uses a disposable Docker container)
+cd backend && npm run test:e2e
+```
+
+- **61 total tests** — 11 unit tests for `generateOccurrences` boundary conditions + 50 e2e tests across two isolated suites.
+- **E2E infrastructure** spins up a separate Postgres container on port 5433, pushes the schema, runs tests, and tears down automatically.
+- **Recurrence e2e tests** are isolated in their own spec file with separate fixtures in the `2030-03` date range (vs `2030-01` for standard tests).
+
 
 ## 🏗 Project Architecture
 
