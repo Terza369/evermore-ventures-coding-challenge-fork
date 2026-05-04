@@ -126,7 +126,8 @@ export function CalendarComponent({
                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
             }}
             events={events}
-            editable={true}
+            editable={!quickUpdateMutation.isPending}
+            eventOverlap={false}
             selectable={true}
             selectMirror={true}
             unselectAuto={false}
