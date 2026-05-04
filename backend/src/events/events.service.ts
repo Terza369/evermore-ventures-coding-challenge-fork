@@ -175,9 +175,7 @@ export class EventsService {
          newOccurrences.push({ startTime, endTime });
       } else {
          let cursorMilliseconds = startTime.getTime();
-         const upperBoundMilliseconds = recurrenceEnd && recurrenceEnd.getTime() < conflictWindowEnd.getTime()
-            ? recurrenceEnd.getTime()
-            : conflictWindowEnd.getTime();
+         const upperBoundMilliseconds = conflictWindowEnd.getTime();
 
          while (cursorMilliseconds < upperBoundMilliseconds) {
             const occurrenceEndMilliseconds = cursorMilliseconds + durationMilliseconds;
