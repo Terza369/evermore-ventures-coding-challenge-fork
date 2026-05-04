@@ -8,7 +8,7 @@ import {
    generateOccurrences,
 } from './events.utils';
 
-const YEAR_MILLISECONDS = 365 * 24 * 60 * 60 * 1000;
+const DEFAULT_RANGE_MILLISECONDS = 10 * 365 * 24 * 60 * 60 * 1000;
 const WEEK_MILLISECONDS = 7 * 24 * 60 * 60 * 1000;
 
 @Injectable()
@@ -19,7 +19,7 @@ export class EventsService {
       const rangeStart = input.from ? new Date(input.from) : new Date(0);
       const rangeEnd = input.to
          ? new Date(input.to)
-         : new Date(Date.now() + YEAR_MILLISECONDS);
+         : new Date(Date.now() + DEFAULT_RANGE_MILLISECONDS);
 
       const where: Prisma.EventWhereInput = {
          OR: [
