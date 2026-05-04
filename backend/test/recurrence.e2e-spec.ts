@@ -247,8 +247,9 @@ describe('Recurring Events (e2e)', () => {
          const standupOccurrences = body.filter((event: { title: string }) =>
             event.title === 'Weekly Standup'
          );
-         // Mar 11 and Mar 18
+         // Mar 11 and Mar 18 (One-off Meeting on Mar 5 is outside this window)
          expect(standupOccurrences).toHaveLength(2);
+         expect(body).toHaveLength(2);
       });
 
       it('should not return occurrences after recurrenceEnd', async () => {
@@ -335,6 +336,7 @@ describe('Recurring Events (e2e)', () => {
          const occurrences = body.filter((event: { title: string }) =>
             event.title === 'Weekly Standup'
          );
+         expect(occurrences).toHaveLength(5);
          // All occurrences should now start at 10:00 instead of 09:00
          for (const occurrence of occurrences) {
             expect(new Date(occurrence.startTime).getUTCHours()).toBe(10);

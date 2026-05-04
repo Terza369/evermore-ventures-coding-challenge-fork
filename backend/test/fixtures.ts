@@ -28,7 +28,7 @@ export const TEST_EVENTS = [
 
 /**
  * Recurring test fixtures in 2030-03, separate from the non-recurring 2030-01 fixtures.
- * "Weekly Standup" recurs every Monday 09:00–09:30 for 5 weeks (Mar 3 → Apr 7).
+ * "Weekly Standup" recurs every Monday 09:00–09:30 for 5 weeks (Mar 4 → Apr 1).
  * "One-off Meeting" is a non-recurring event on a Wednesday to avoid conflicts.
  */
 export const RECURRENCE_TEST_EVENTS = [
