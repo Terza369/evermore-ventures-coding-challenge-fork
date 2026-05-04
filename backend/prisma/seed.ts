@@ -47,6 +47,14 @@ async function main() {
             endTime: new Date(now.getTime() + 1000 * 60 * 60 * 2 + 1000 * 60 * 30), // 30 mins
             timezone: 'Australia/Sydney',
          },
+         {
+            title: 'Sprint Retro (Weekly)',
+            startTime: new Date(now.getTime() + 1000 * 60 * 60 * 24 * 3), // 3 days from now
+            endTime: new Date(now.getTime() + 1000 * 60 * 60 * 24 * 3 + 1000 * 60 * 60 * 1), // 1 hour
+            timezone: 'Europe/Zagreb',
+            recurrenceRule: 'WEEKLY',
+            recurrenceEnd: new Date(now.getTime() + 1000 * 60 * 60 * 24 * 90), // 90 days out
+         },
       ],
    });
 

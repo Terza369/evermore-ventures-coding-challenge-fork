@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import type { EventModel as Event } from '../../prisma/generated/models';
 
+const WEEK_MILLISECONDS = 7 * 24 * 60 * 60 * 1000;
+
 /**
  * Validates that startTime is strictly before endTime.
  */
@@ -27,12 +29,12 @@ export function validateTimezone(timezone: string) {
 /**
  * Validates recurrence fields.
  * - If recurrenceRule is set, recurrenceEnd must also be set.
- * - recurrenceEnd must be after startTime.
+ * - recurrenceEnd must be after endTime (so at least one full occurrence fits).
  */
 export function validateRecurrence(
    recurrenceRule: string | undefined | null,
    recurrenceEnd: Date | undefined | null,
-   startTime: Date
+   endTime: Date
 ) {
    if (recurrenceRule && !recurrenceEnd) {
       throw new BadRequestException(
@@ -46,9 +48,9 @@ export function validateRecurrence(
       );
    }
 
-   if (recurrenceEnd && recurrenceEnd <= startTime) {
+   if (recurrenceEnd && recurrenceEnd <= endTime) {
       throw new BadRequestException(
-         'recurrenceEnd must be after startTime'
+         'recurrenceEnd must be after endTime'
       );
    }
 }
@@ -63,7 +65,7 @@ export function validateRecurrence(
  * Each occurrence has the same shape as the DB Event entity.
  * Recurring occurrences get a synthetic id: `${parentId}_${occurrenceStart.toISOString()}`.
  */
-export function expandRecurrences(
+export function generateOccurrences(
    event: Event,
    rangeStart: Date,
    rangeEnd: Date
@@ -72,31 +74,28 @@ export function expandRecurrences(
       return [event];
    }
 
-   const durationMs = event.endTime.getTime() - event.startTime.getTime();
+   const durationMilliseconds = event.endTime.getTime() - event.startTime.getTime();
    const occurrences: Event[] = [];
-   const cursor = new Date(event.startTime);
-   const upperBound = event.recurrenceEnd && event.recurrenceEnd < rangeEnd
-      ? event.recurrenceEnd
-      : rangeEnd;
+   let cursorMilliseconds = event.startTime.getTime();
+   const upperBoundMilliseconds = event.recurrenceEnd && event.recurrenceEnd < rangeEnd
+      ? event.recurrenceEnd.getTime()
+      : rangeEnd.getTime();
 
-   while (cursor < upperBound) {
-      const occStart = new Date(cursor);
-      const occEnd = new Date(cursor.getTime() + durationMs);
+   while (cursorMilliseconds < upperBoundMilliseconds) {
+      const occurrenceEndMilliseconds = cursorMilliseconds + durationMilliseconds;
 
-      // Does this occurrence overlap the query window?
-      if (occStart < rangeEnd && occEnd > rangeStart) {
+      if (cursorMilliseconds < rangeEnd.getTime() && occurrenceEndMilliseconds > rangeStart.getTime()) {
+         const occurrenceStart = new Date(cursorMilliseconds);
          occurrences.push({
             ...event,
-            id: `${event.id}_${occStart.toISOString()}`,
-            startTime: occStart,
-            endTime: occEnd,
+            id: `${event.id}_${occurrenceStart.toISOString()}`,
+            startTime: occurrenceStart,
+            endTime: new Date(occurrenceEndMilliseconds),
          });
       }
 
-      // Advance by 7 days
-      cursor.setDate(cursor.getDate() + 7);
+      cursorMilliseconds += WEEK_MILLISECONDS;
    }
 
    return occurrences;
 }
-

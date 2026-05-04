@@ -5,8 +5,11 @@ import {
    validateTimeRange,
    validateTimezone,
    validateRecurrence,
-   expandRecurrences,
+   generateOccurrences,
 } from './events.utils';
+
+const YEAR_MILLISECONDS = 365 * 24 * 60 * 60 * 1000;
+const WEEK_MILLISECONDS = 7 * 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class EventsService {
@@ -14,17 +17,17 @@ export class EventsService {
 
    async findAll(input: FindEventsDto) {
       const rangeStart = input.from ? new Date(input.from) : new Date(0);
-      const rangeEnd = input.to ? new Date(input.to) : new Date('9999-12-31');
+      const rangeEnd = input.to
+         ? new Date(input.to)
+         : new Date(Date.now() + YEAR_MILLISECONDS);
 
       const where: Prisma.EventWhereInput = {
          OR: [
-            // Non-recurring events that overlap the window
             {
                recurrenceRule: null,
                startTime: { lt: rangeEnd },
                endTime: { gt: rangeStart },
             },
-            // Recurring events whose series spans the window
             {
                recurrenceRule: { not: null },
                startTime: { lt: rangeEnd },
@@ -39,7 +42,7 @@ export class EventsService {
       });
 
       return events
-         .flatMap((e) => expandRecurrences(e, rangeStart, rangeEnd))
+         .flatMap((event) => generateOccurrences(event, rangeStart, rangeEnd))
          .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
    }
 
@@ -62,7 +65,7 @@ export class EventsService {
 
       validateTimeRange(startTime, endTime);
       validateTimezone(input.timezone);
-      validateRecurrence(input.recurrenceRule, recurrenceEnd, startTime);
+      validateRecurrence(input.recurrenceRule, recurrenceEnd, endTime);
       await this.checkForConflicts(
          startTime,
          endTime,
@@ -104,7 +107,7 @@ export class EventsService {
       if (input.timezone) {
          validateTimezone(input.timezone);
       }
-      validateRecurrence(recurrenceRule, recurrenceEnd, startTime);
+      validateRecurrence(recurrenceRule, recurrenceEnd, endTime);
       await this.checkForConflicts(
          startTime,
          endTime,
@@ -143,22 +146,18 @@ export class EventsService {
       recurrenceEnd: Date | null,
       excludeId?: string
    ) {
-      // Determine the full time range we need to check
       const conflictWindowStart = startTime;
       const conflictWindowEnd = recurrenceEnd ?? endTime;
 
-      // Fetch all candidate events that could possibly overlap
       const candidates = await this.prisma.event.findMany({
          where: {
             ...(excludeId && { id: { not: excludeId } }),
             OR: [
-               // Non-recurring that overlap the conflict window
                {
                   recurrenceRule: null,
                   startTime: { lt: conflictWindowEnd },
                   endTime: { gt: conflictWindowStart },
                },
-               // Recurring whose series spans the conflict window
                {
                   recurrenceRule: { not: null },
                   startTime: { lt: conflictWindowEnd },
@@ -166,58 +165,53 @@ export class EventsService {
                },
             ],
          },
-         select: {
-            id: true,
-            title: true,
-            startTime: true,
-            endTime: true,
-            timezone: true,
-            recurrenceRule: true,
-            recurrenceEnd: true,
-            createdAt: true,
-            updatedAt: true,
-         },
       });
 
       // Build the new event's occurrences
-      const newEventTemplate = {
-         id: 'new',
-         title: '',
-         startTime,
-         endTime,
-         timezone: '',
-         recurrenceRule,
-         recurrenceEnd,
-         createdAt: new Date(),
-         updatedAt: new Date(),
-      };
-      const newOccurrences = expandRecurrences(
-         newEventTemplate,
-         conflictWindowStart,
-         conflictWindowEnd
-      );
+      const durationMilliseconds = endTime.getTime() - startTime.getTime();
+      const newOccurrences: { startTime: Date; endTime: Date }[] = [];
+
+      if (!recurrenceRule) {
+         newOccurrences.push({ startTime, endTime });
+      } else {
+         let cursorMilliseconds = startTime.getTime();
+         const upperBoundMilliseconds = recurrenceEnd && recurrenceEnd.getTime() < conflictWindowEnd.getTime()
+            ? recurrenceEnd.getTime()
+            : conflictWindowEnd.getTime();
+
+         while (cursorMilliseconds < upperBoundMilliseconds) {
+            const occurrenceEndMilliseconds = cursorMilliseconds + durationMilliseconds;
+            if (cursorMilliseconds < conflictWindowEnd.getTime() && occurrenceEndMilliseconds > conflictWindowStart.getTime()) {
+               newOccurrences.push({
+                  startTime: new Date(cursorMilliseconds),
+                  endTime: new Date(occurrenceEndMilliseconds),
+               });
+            }
+            cursorMilliseconds += WEEK_MILLISECONDS;
+         }
+      }
 
       // Check each candidate's occurrences against each new occurrence
       for (const candidate of candidates) {
-         const candidateOccurrences = expandRecurrences(
+         const candidateOccurrences = generateOccurrences(
             candidate,
             conflictWindowStart,
             conflictWindowEnd
          );
 
-         for (const newOcc of newOccurrences) {
-            for (const existingOcc of candidateOccurrences) {
+         for (const newOccurrence of newOccurrences) {
+            for (const existingOccurrence of candidateOccurrences) {
                if (
-                  newOcc.startTime < existingOcc.endTime &&
-                  existingOcc.startTime < newOcc.endTime
+                  newOccurrence.startTime < existingOccurrence.endTime &&
+                  existingOccurrence.startTime < newOccurrence.endTime
                ) {
                   throw new ConflictException({
                      message: 'Event conflicts with an existing event',
                      conflictingEvent: {
                         id: candidate.id,
                         title: candidate.title,
-                        occurrenceStart: existingOcc.startTime,
-                        occurrenceEnd: existingOcc.endTime,
+                        occurrenceStart: existingOccurrence.startTime,
+                        occurrenceEnd: existingOccurrence.endTime,
                      },
                   });
                }
@@ -226,3 +220,4 @@ export class EventsService {
       }
    }
 }
+
