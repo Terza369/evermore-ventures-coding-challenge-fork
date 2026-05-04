@@ -7,7 +7,6 @@ import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { seedRecurrenceTestDatabase } from './fixtures';
 
-// Load the DATABASE_URL written by globalSetup
 const envFile = path.join(__dirname, '.test-env.json');
 const testEnv = JSON.parse(fs.readFileSync(envFile, 'utf-8'));
 process.env.DATABASE_URL = testEnv.DATABASE_URL;
@@ -41,12 +40,8 @@ describe('Recurring Events (e2e)', () => {
       await app.close();
    });
 
-   // ─── Helpers ──────────────────────────────────────────────────────
-
-   const weeklyStandup = () => seededEvents[0]; // recurring
-   const oneOffMeeting = () => seededEvents[1]; // non-recurring
-
-   // ─── POST /api/events — Creating recurring events ─────────────────
+   const weeklyStandup = () => seededEvents[0];
+   const oneOffMeeting = () => seededEvents[1];
 
    describe('POST /api/events — recurring creation', () => {
       it('should create a weekly recurring event and return recurrence fields', async () => {
@@ -108,7 +103,7 @@ describe('Recurring Events (e2e)', () => {
             endTime: '2030-05-01T11:00:00.000Z',
             timezone: 'UTC',
             recurrenceRule: 'WEEKLY',
-            recurrenceEnd: '2030-05-01T10:30:00.000Z', // before endTime
+            recurrenceEnd: '2030-05-01T10:30:00.000Z',
          };
 
          const { body } = await request(app.getHttpServer())
@@ -136,8 +131,6 @@ describe('Recurring Events (e2e)', () => {
       });
 
       it('should reject recurring event that conflicts with a non-recurring event with 409', async () => {
-         // Create a recurring event whose occurrence overlaps the seeded "One-off Meeting" (Wed Mar 5 14:00–15:00)
-         // A weekly event starting Wed Mar 5 at 14:30 would conflict on the first occurrence
          const input = {
             title: 'Conflicting Weekly',
             startTime: '2030-03-05T14:30:00.000Z',
@@ -157,8 +150,6 @@ describe('Recurring Events (e2e)', () => {
       });
 
       it('should reject recurring event that conflicts with another recurring event with 409', async () => {
-         // Seeded "Weekly Standup" is Mon 09:00–09:30 recurring.
-         // A new weekly event on Mon 09:15 would conflict on multiple occurrences.
          const input = {
             title: 'Conflicting Recurring',
             startTime: '2030-03-04T09:15:00.000Z',
@@ -178,11 +169,8 @@ describe('Recurring Events (e2e)', () => {
       });
    });
 
-   // ─── GET /api/events — Occurrence expansion ───────────────────────
-
    describe('GET /api/events — occurrence expansion', () => {
       it('should return expanded occurrences for a recurring event', async () => {
-         // Weekly Standup: Mar 4 → Apr 7, 5 weeks of occurrences
          const { body } = await request(app.getHttpServer())
             .get('/api/events')
             .query({
@@ -194,7 +182,6 @@ describe('Recurring Events (e2e)', () => {
          const standupOccurrences = body.filter((event: { title: string }) =>
             event.title === 'Weekly Standup'
          );
-         // 5 Mondays: Mar 4, 11, 18, 25, Apr 1
          expect(standupOccurrences).toHaveLength(5);
       });
 
@@ -214,7 +201,6 @@ describe('Recurring Events (e2e)', () => {
          for (const occurrence of standupOccurrences) {
             const parts = occurrence.id.split('_');
             expect(parts.length).toBeGreaterThanOrEqual(2);
-            // First part should be the template UUID
             expect(parts[0]).toBe(weeklyStandup().id);
          }
       });
@@ -235,7 +221,6 @@ describe('Recurring Events (e2e)', () => {
       });
 
       it('should only return occurrences within the from/to window', async () => {
-         // Query only the second and third weeks (Mar 10–24)
          const { body } = await request(app.getHttpServer())
             .get('/api/events')
             .query({
@@ -247,13 +232,11 @@ describe('Recurring Events (e2e)', () => {
          const standupOccurrences = body.filter((event: { title: string }) =>
             event.title === 'Weekly Standup'
          );
-         // Mar 11 and Mar 18 (One-off Meeting on Mar 5 is outside this window)
          expect(standupOccurrences).toHaveLength(2);
          expect(body).toHaveLength(2);
       });
 
       it('should not return occurrences after recurrenceEnd', async () => {
-         // Query a range well past recurrenceEnd
          const { body } = await request(app.getHttpServer())
             .get('/api/events')
             .query({
@@ -268,8 +251,6 @@ describe('Recurring Events (e2e)', () => {
          expect(standupOccurrences).toHaveLength(0);
       });
    });
-
-   // ─── GET /api/events/:id — Template lookup ────────────────────────
 
    describe('GET /api/events/:id — template lookup', () => {
       it('should return the original template when fetched by UUID', async () => {
@@ -291,8 +272,6 @@ describe('Recurring Events (e2e)', () => {
             .expect(404);
       });
    });
-
-   // ─── PATCH /api/events/:id — Updating recurring events ────────────
 
    describe('PATCH /api/events/:id — recurring updates', () => {
       it('should update title and reflect it in all occurrences', async () => {
@@ -316,7 +295,6 @@ describe('Recurring Events (e2e)', () => {
       });
 
       it('should shift all occurrences when startTime/endTime are updated', async () => {
-         // Shift by 1 hour later
          await request(app.getHttpServer())
             .patch(`/api/events/${weeklyStandup().id}`)
             .send({
@@ -337,7 +315,6 @@ describe('Recurring Events (e2e)', () => {
             event.title === 'Weekly Standup'
          );
          expect(occurrences).toHaveLength(5);
-         // All occurrences should now start at 10:00 instead of 09:00
          for (const occurrence of occurrences) {
             expect(new Date(occurrence.startTime).getUTCHours()).toBe(10);
          }
@@ -384,12 +361,10 @@ describe('Recurring Events (e2e)', () => {
          const meetings = body.filter((event: { title: string }) =>
             event.title === 'One-off Meeting'
          );
-         // Should now have multiple occurrences
          expect(meetings.length).toBeGreaterThan(1);
       });
 
       it('should reject update that creates a conflict with 409', async () => {
-         // Move the one-off meeting to overlap with Weekly Standup (Mon 09:00–09:30)
          const { body } = await request(app.getHttpServer())
             .patch(`/api/events/${oneOffMeeting().id}`)
             .send({
@@ -401,8 +376,6 @@ describe('Recurring Events (e2e)', () => {
          expect(body.conflictingEvent).toBeDefined();
       });
    });
-
-   // ─── DELETE /api/events/:id — Deleting recurring events ───────────
 
    describe('DELETE /api/events/:id — recurring deletion', () => {
       it('should delete template and remove all occurrences', async () => {
@@ -429,7 +402,6 @@ describe('Recurring Events (e2e)', () => {
             .delete(`/api/events/${weeklyStandup().id}`)
             .expect(204);
 
-         // Confirm it's gone
          await request(app.getHttpServer())
             .get(`/api/events/${weeklyStandup().id}`)
             .expect(404);

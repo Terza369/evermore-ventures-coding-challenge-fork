@@ -7,7 +7,6 @@ import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { seedTestDatabase, TEST_EVENTS } from './fixtures';
 
-// Load the DATABASE_URL written by globalSetup
 const envFile = path.join(__dirname, '.test-env.json');
 const testEnv = JSON.parse(fs.readFileSync(envFile, 'utf-8'));
 process.env.DATABASE_URL = testEnv.DATABASE_URL;
@@ -41,14 +40,11 @@ describe('Events (e2e)', () => {
       await app.close();
    });
 
-   // ─── GET /api/events ───────────────────────────────────────────────
-
    describe('GET /api/events', () => {
       it('should return all seeded events', async () => {
          const { body } = await request(app.getHttpServer()).get('/api/events').expect(200);
 
          expect(body).toHaveLength(TEST_EVENTS.length);
-         // Verify each event has the expected shape
          for (const event of body) {
             expect(event).toHaveProperty('id');
             expect(event).toHaveProperty('title');
@@ -68,7 +64,6 @@ describe('Events (e2e)', () => {
       });
 
       it('should filter by "from" query param', async () => {
-         // Only events ending after Jan 16 00:00 → Sprint Planning
          const { body } = await request(app.getHttpServer())
             .get('/api/events')
             .query({ from: '2030-01-16T00:00:00.000Z' })
@@ -79,7 +74,6 @@ describe('Events (e2e)', () => {
       });
 
       it('should filter by "to" query param', async () => {
-         // Only events starting before Jan 15 10:00 → Morning Standup
          const { body } = await request(app.getHttpServer())
             .get('/api/events')
             .query({ to: '2030-01-15T10:00:00.000Z' })
@@ -90,7 +84,6 @@ describe('Events (e2e)', () => {
       });
 
       it('should filter by both "from" and "to"', async () => {
-         // Range covering Jan 15 only → Morning Standup + Design Review
          const { body } = await request(app.getHttpServer())
             .get('/api/events')
             .query({
@@ -114,8 +107,6 @@ describe('Events (e2e)', () => {
          expect(body).toEqual([]);
       });
    });
-
-   // ─── GET /api/events/:id ──────────────────────────────────────────
 
    describe('GET /api/events/:id', () => {
       it('should return a single event by ID with full shape', async () => {
@@ -141,8 +132,6 @@ describe('Events (e2e)', () => {
          expect(body.message).toContain('not found');
       });
    });
-
-   // ─── POST /api/events ─────────────────────────────────────────────
 
    describe('POST /api/events', () => {
       it('should create an event and return 201 with full shape', async () => {
@@ -180,7 +169,6 @@ describe('Events (e2e)', () => {
             .send(input)
             .expect(201);
 
-         // Verify it's actually in the database
          const { body: fetched } = await request(app.getHttpServer())
             .get(`/api/events/${created.id}`)
             .expect(200);
@@ -264,7 +252,6 @@ describe('Events (e2e)', () => {
       });
 
       it('should reject overlapping event with 409 and conflicting event details', async () => {
-         // Overlaps with "Morning Standup" (09:00–09:30)
          const input = {
             title: 'Conflict',
             startTime: '2030-01-15T09:15:00.000Z',
@@ -285,7 +272,6 @@ describe('Events (e2e)', () => {
       });
 
       it('should allow touching events (end === start)', async () => {
-         // Starts exactly when "Morning Standup" ends (09:30)
          const input = {
             title: 'Right After Standup',
             startTime: '2030-01-15T09:30:00.000Z',
@@ -322,8 +308,6 @@ describe('Events (e2e)', () => {
       });
    });
 
-   // ─── PATCH /api/events/:id ────────────────────────────────────────
-
    describe('PATCH /api/events/:id', () => {
       it('should update title only', async () => {
          const event = seededEvents[0];
@@ -334,7 +318,6 @@ describe('Events (e2e)', () => {
             .expect(200);
 
          expect(body.title).toBe('Updated Title');
-         // Times should remain unchanged
          expect(new Date(body.startTime).toISOString()).toBe(event.startTime.toISOString());
          expect(new Date(body.endTime).toISOString()).toBe(event.endTime.toISOString());
       });
@@ -366,9 +349,8 @@ describe('Events (e2e)', () => {
       });
 
       it('should reject conflict with other events', async () => {
-         const event = seededEvents[0]; // Morning Standup
+         const event = seededEvents[0];
 
-         // Move it to overlap with Design Review (14:00–15:00)
          const { body } = await request(app.getHttpServer())
             .patch(`/api/events/${event.id}`)
             .send({
@@ -381,9 +363,8 @@ describe('Events (e2e)', () => {
       });
 
       it('should allow self-overlap (updating own times)', async () => {
-         const event = seededEvents[0]; // Morning Standup 09:00–09:30
+         const event = seededEvents[0];
 
-         // Shift by 5 minutes — still overlaps with original self
          const { body } = await request(app.getHttpServer())
             .patch(`/api/events/${event.id}`)
             .send({
@@ -405,8 +386,6 @@ describe('Events (e2e)', () => {
          expect(body.message).toContain('not found');
       });
    });
-
-   // ─── DELETE /api/events/:id ───────────────────────────────────────
 
    describe('DELETE /api/events/:id', () => {
       it('should delete an event and return 204', async () => {
