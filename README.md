@@ -42,16 +42,6 @@ cd backend && npm run test:e2e
 - **Recurrence e2e tests** are isolated in their own spec file with separate fixtures in the `2030-03` date range (vs `2030-01` for standard tests).
 
 
-## 🏗 Project Architecture
-
-| Service      | Technology Stack                                                   | Location             |
-| :----------- | :----------------------------------------------------------------- | :------------------- |
-| **Frontend** | React, TypeScript, Material UI, Zustand, TanStack (Query & Router) | `/frontend`          |
-| **Backend**  | NestJS, TypeScript, Prisma ORM                                     | `/backend`           |
-| **Database** | PostgreSQL 15 (Docker)                                             | `docker-compose.yml` |
-
----
-
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
