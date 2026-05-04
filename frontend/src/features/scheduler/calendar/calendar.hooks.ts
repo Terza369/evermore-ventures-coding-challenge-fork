@@ -4,14 +4,18 @@ import { API_BASE } from '../scheduler.config';
 
 import type { BackendEvent } from './calendar.types';
 
-export function useSchedulerEvents() {
+export function useSchedulerEvents(from?: string, to?: string) {
    return useQuery<BackendEvent[]>({
-      queryKey: ['events'],
+      queryKey: ['events', from, to],
       queryFn: async () => {
-         const res = await fetch(API_BASE);
+         const params = new URLSearchParams();
+         if (from) params.set('from', from);
+         if (to) params.set('to', to);
+         const res = await fetch(`${API_BASE}?${params.toString()}`);
          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
          return res.json();
       },
+      enabled: !!from && !!to,
    });
 }
 

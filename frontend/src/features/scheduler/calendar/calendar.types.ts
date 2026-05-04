@@ -1,4 +1,4 @@
-import type { DateSelectArg, EventClickArg } from '@fullcalendar/core/index.js';
+import type { DateSelectArg, EventClickArg, DatesSetArg } from '@fullcalendar/core/index.js';
 import type FullCalendar from '@fullcalendar/react';
 
 export interface BackendEvent {
@@ -18,5 +18,6 @@ export interface CalendarComponentProps {
    viewingTimezone: string;
    onSelect: (info: DateSelectArg) => void;
    onEventClick: (info: EventClickArg) => void;
+   onDatesSet: (info: DatesSetArg) => void;
    calendarRef: React.RefObject<FullCalendar | null>;
 }

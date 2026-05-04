@@ -20,6 +20,7 @@ export function CalendarComponent({
    viewingTimezone,
    onSelect,
    onEventClick,
+   onDatesSet,
    calendarRef,
 }: CalendarComponentProps) {
    const { showToast } = useToast();
@@ -39,36 +40,33 @@ export function CalendarComponent({
          const id = info.event.id.split('_')[0];
          const isRecurring = info.event.extendedProps.recurrenceRule;
 
-         if (isRecurring) {
-            // For recurring events: compute the delta and apply it to the template
-            const oldStart = info.oldEvent.start;
-            if (!oldStart) return;
-            const deltaMs = start.getTime() - oldStart.getTime();
+         try {
+            if (isRecurring) {
+               const oldStart = info.oldEvent.start;
+               if (!oldStart) return;
+               const deltaMilliseconds = start.getTime() - oldStart.getTime();
 
-            try {
-               // Fetch the template's current times
                const res = await fetch(`${API_BASE}/${id}`);
                if (!res.ok) throw new Error(`${res.status}`);
                const template = await res.json();
 
-               quickUpdateMutation.mutate({
+               await quickUpdateMutation.mutateAsync({
                   id,
-                  startTime: new Date(new Date(template.startTime).getTime() + deltaMs).toISOString(),
-                  endTime: new Date(new Date(template.endTime).getTime() + deltaMs).toISOString(),
+                  startTime: new Date(new Date(template.startTime).getTime() + deltaMilliseconds).toISOString(),
+                  endTime: new Date(new Date(template.endTime).getTime() + deltaMilliseconds).toISOString(),
                });
-            } catch {
-               info.revert();
-               showToast('Failed to update recurring event', 'error');
+            } else {
+               await quickUpdateMutation.mutateAsync({
+                  id,
+                  startTime: start.toISOString(),
+                  endTime: end.toISOString(),
+               });
             }
-         } else {
-            quickUpdateMutation.mutate({
-               id,
-               startTime: start.toISOString(),
-               endTime: end.toISOString(),
-            });
+         } catch {
+            info.revert();
          }
       },
-      [quickUpdateMutation, showToast]
+      [quickUpdateMutation]
    );
 
    const handleEventResize = useCallback(
@@ -80,34 +78,33 @@ export function CalendarComponent({
          const id = info.event.id.split('_')[0];
          const isRecurring = info.event.extendedProps.recurrenceRule;
 
-         if (isRecurring) {
-            const oldEnd = info.oldEvent.end;
-            if (!oldEnd) return;
-            const deltaMs = end.getTime() - oldEnd.getTime();
+         try {
+            if (isRecurring) {
+               const oldEnd = info.oldEvent.end;
+               if (!oldEnd) return;
+               const deltaMilliseconds = end.getTime() - oldEnd.getTime();
 
-            try {
                const res = await fetch(`${API_BASE}/${id}`);
                if (!res.ok) throw new Error(`${res.status}`);
                const template = await res.json();
 
-               quickUpdateMutation.mutate({
+               await quickUpdateMutation.mutateAsync({
                   id,
                   startTime: template.startTime,
-                  endTime: new Date(new Date(template.endTime).getTime() + deltaMs).toISOString(),
+                  endTime: new Date(new Date(template.endTime).getTime() + deltaMilliseconds).toISOString(),
                });
-            } catch {
-               info.revert();
-               showToast('Failed to update recurring event', 'error');
+            } else {
+               await quickUpdateMutation.mutateAsync({
+                  id,
+                  startTime: start.toISOString(),
+                  endTime: end.toISOString(),
+               });
             }
-         } else {
-            quickUpdateMutation.mutate({
-               id,
-               startTime: start.toISOString(),
-               endTime: end.toISOString(),
-            });
+         } catch {
+            info.revert();
          }
       },
-      [quickUpdateMutation, showToast]
+      [quickUpdateMutation]
    );
 
    return (
@@ -137,6 +134,7 @@ export function CalendarComponent({
             eventClick={onEventClick}
             eventDrop={handleEventDrop}
             eventResize={handleEventResize}
+            datesSet={onDatesSet}
             height="100%"
          />
       </Box>
