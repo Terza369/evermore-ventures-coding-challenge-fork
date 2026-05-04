@@ -7,6 +7,8 @@ import {
    Button,
    Autocomplete,
    Stack,
+   FormControlLabel,
+   Switch,
 } from '@mui/material';
 
 import {
@@ -64,6 +66,10 @@ export function EventDialog({ open, onClose, mode, initialData }: EventDialogPro
       setStartLocal,
       endLocal,
       setEndLocal,
+      recurrenceRule,
+      setRecurrenceRule,
+      recurrenceEnd,
+      setRecurrenceEnd,
       handleSubmit,
    } = useEventDialog(initialData, handleSave);
 
@@ -113,6 +119,30 @@ export function EventDialog({ open, onClose, mode, initialData }: EventDialogPro
                      disableClearable
                      renderInput={(params) => <TextField {...params} label="Event Timezone" />}
                   />
+
+                  <FormControlLabel
+                     control={
+                        <Switch
+                           checked={recurrenceRule === 'WEEKLY'}
+                           onChange={(e) =>
+                              setRecurrenceRule(e.target.checked ? 'WEEKLY' : undefined)
+                           }
+                        />
+                     }
+                     label="Repeat Weekly"
+                  />
+
+                  {recurrenceRule === 'WEEKLY' && (
+                     <TextField
+                        label="Repeat Until"
+                        type="date"
+                        value={recurrenceEnd}
+                        onChange={(e) => setRecurrenceEnd(e.target.value)}
+                        required
+                        fullWidth
+                        slotProps={{ inputLabel: { shrink: true } }}
+                     />
+                  )}
                </Stack>
             </DialogContent>
 

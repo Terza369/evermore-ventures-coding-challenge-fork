@@ -8,14 +8,15 @@ datasource db {
   provider = "postgresql"
 }
 
-// Prisma should convert to UTC under the hood, but I don't want to rely solely on that.
-// So I'm storing it as "timestamp with time zone" on db level.
 model Event {
   id        String   @id @default(uuid())
   title     String
   startTime DateTime @db.Timestamptz
   endTime   DateTime @db.Timestamptz
   timezone  String
+
+  recurrenceRule String?
+  recurrenceEnd  DateTime? @db.Timestamptz
 
   createdAt DateTime @default(now()) @db.Timestamptz
   updatedAt DateTime @updatedAt @db.Timestamptz

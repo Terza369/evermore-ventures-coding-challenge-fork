@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsDateString } from 'class-validator';
+import { IsString, IsNotEmpty, IsDateString, IsOptional, IsIn } from 'class-validator';
 
 export class CreateEventDto {
    @IsString()
@@ -14,4 +14,12 @@ export class CreateEventDto {
    @IsString()
    @IsNotEmpty()
    timezone!: string;
+
+   @IsOptional()
+   @IsIn(['WEEKLY'])
+   recurrenceRule?: string;
+
+   @IsOptional()
+   @IsDateString()
+   recurrenceEnd?: string;
 }

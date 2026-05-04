@@ -23,6 +23,14 @@ export function useEventDialog(
    const [endLocal, setEndLocal] = useState(() =>
       initialData.endTime ? toLocalInput(initialData.endTime, defaultTz) : ''
    );
+   const [recurrenceRule, setRecurrenceRule] = useState<string | undefined>(
+      initialData.recurrenceRule ?? undefined
+   );
+   const [recurrenceEnd, setRecurrenceEnd] = useState<string>(
+      initialData.recurrenceEnd
+         ? toLocalInput(initialData.recurrenceEnd, defaultTz).split('T')[0]
+         : ''
+   );
 
    const handleTimezoneChange = (newTz: string) => {
       if (startLocal) {
@@ -49,6 +57,10 @@ export function useEventDialog(
          startTime: startUtc,
          endTime: endUtc,
          timezone,
+         recurrenceRule,
+         recurrenceEnd: recurrenceRule && recurrenceEnd
+            ? fromLocalInput(`${recurrenceEnd}T23:59`, timezone)
+            : undefined,
       });
    };
 
@@ -62,6 +74,10 @@ export function useEventDialog(
       setStartLocal,
       endLocal,
       setEndLocal,
+      recurrenceRule,
+      setRecurrenceRule,
+      recurrenceEnd,
+      setRecurrenceEnd,
       handleSubmit,
    };
 }
@@ -82,6 +98,8 @@ export function useCreateSchedulerEvent(
                startTime: data.startTime,
                endTime: data.endTime,
                timezone: data.timezone,
+               recurrenceRule: data.recurrenceRule,
+               recurrenceEnd: data.recurrenceEnd,
             }),
          });
          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
@@ -113,6 +131,8 @@ export function useUpdateSchedulerEvent(
                startTime: data.startTime,
                endTime: data.endTime,
                timezone: data.timezone,
+               recurrenceRule: data.recurrenceRule,
+               recurrenceEnd: data.recurrenceEnd,
             }),
          });
          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);

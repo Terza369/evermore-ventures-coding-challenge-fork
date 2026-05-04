@@ -11,6 +11,8 @@ export interface EventFormData {
    startTime: string;
    endTime: string;
    timezone: string;
+   recurrenceRule?: string;
+   recurrenceEnd?: string;
 }
 
 export interface DialogState {

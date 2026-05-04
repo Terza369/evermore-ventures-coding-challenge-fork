@@ -1,33 +1,46 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService, Prisma } from '../prisma/prisma.service';
 import { CreateEventDto, UpdateEventDto, FindEventsDto } from './dto';
-import { validateTimeRange, validateTimezone } from './events.utils';
+import {
+   validateTimeRange,
+   validateTimezone,
+   validateRecurrence,
+   expandRecurrences,
+} from './events.utils';
 
 @Injectable()
 export class EventsService {
    constructor(private readonly prisma: PrismaService) {}
 
    async findAll(input: FindEventsDto) {
-      const where: Prisma.EventWhereInput = {};
+      const rangeStart = input.from ? new Date(input.from) : new Date(0);
+      const rangeEnd = input.to ? new Date(input.to) : new Date('9999-12-31');
 
-      if (input.from || input.to) {
-         where.startTime = {};
-         where.endTime = {};
+      const where: Prisma.EventWhereInput = {
+         OR: [
+            // Non-recurring events that overlap the window
+            {
+               recurrenceRule: null,
+               startTime: { lt: rangeEnd },
+               endTime: { gt: rangeStart },
+            },
+            // Recurring events whose series spans the window
+            {
+               recurrenceRule: { not: null },
+               startTime: { lt: rangeEnd },
+               recurrenceEnd: { gt: rangeStart },
+            },
+         ],
+      };
 
-         if (input.from) {
-            // Events that end after the range start
-            where.endTime = { gt: new Date(input.from) };
-         }
-         if (input.to) {
-            // Events that start before the range end
-            where.startTime = { lt: new Date(input.to) };
-         }
-      }
-
-      return this.prisma.event.findMany({
+      const events = await this.prisma.event.findMany({
          where,
          orderBy: { startTime: 'asc' },
       });
+
+      return events
+         .flatMap((e) => expandRecurrences(e, rangeStart, rangeEnd))
+         .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
    }
 
    async findOne(id: string) {
@@ -43,10 +56,19 @@ export class EventsService {
    async create(input: CreateEventDto) {
       const startTime = new Date(input.startTime);
       const endTime = new Date(input.endTime);
+      const recurrenceEnd = input.recurrenceEnd
+         ? new Date(input.recurrenceEnd)
+         : null;
 
       validateTimeRange(startTime, endTime);
       validateTimezone(input.timezone);
-      await this.checkForConflicts(startTime, endTime);
+      validateRecurrence(input.recurrenceRule, recurrenceEnd, startTime);
+      await this.checkForConflicts(
+         startTime,
+         endTime,
+         input.recurrenceRule ?? null,
+         recurrenceEnd
+      );
 
       return this.prisma.event.create({
          data: {
@@ -54,6 +76,8 @@ export class EventsService {
             startTime,
             endTime,
             timezone: input.timezone,
+            recurrenceRule: input.recurrenceRule ?? null,
+            recurrenceEnd,
          },
       });
    }
@@ -61,15 +85,33 @@ export class EventsService {
    async update(id: string, input: UpdateEventDto) {
       const existing = await this.findOne(id);
 
-      const startTime = input.startTime ? new Date(input.startTime) : existing.startTime;
-      const endTime = input.endTime ? new Date(input.endTime) : existing.endTime;
+      const startTime = input.startTime
+         ? new Date(input.startTime)
+         : existing.startTime;
+      const endTime = input.endTime
+         ? new Date(input.endTime)
+         : existing.endTime;
+      const recurrenceRule =
+         input.recurrenceRule !== undefined
+            ? (input.recurrenceRule ?? null)
+            : existing.recurrenceRule;
+      const recurrenceEnd =
+         input.recurrenceEnd !== undefined
+            ? (input.recurrenceEnd ? new Date(input.recurrenceEnd) : null)
+            : existing.recurrenceEnd;
 
       validateTimeRange(startTime, endTime);
       if (input.timezone) {
          validateTimezone(input.timezone);
       }
-
-      await this.checkForConflicts(startTime, endTime, id);
+      validateRecurrence(recurrenceRule, recurrenceEnd, startTime);
+      await this.checkForConflicts(
+         startTime,
+         endTime,
+         recurrenceRule,
+         recurrenceEnd,
+         id
+      );
 
       return this.prisma.event.update({
          where: { id },
@@ -78,41 +120,109 @@ export class EventsService {
             ...(input.startTime !== undefined && { startTime }),
             ...(input.endTime !== undefined && { endTime }),
             ...(input.timezone !== undefined && { timezone: input.timezone }),
+            ...(input.recurrenceRule !== undefined && { recurrenceRule }),
+            ...(input.recurrenceEnd !== undefined && { recurrenceEnd }),
          },
       });
    }
 
    async delete(id: string) {
-      // Ensure the event exists
       await this.findOne(id);
-
       return this.prisma.event.delete({ where: { id } });
    }
 
    /**
-    * Checks for overlapping events in UTC.
-    * Two intervals [A_start, A_end) and [B_start, B_end) overlap iff:
-    *   A_start < B_end AND B_start < A_end
-    *
-    * Touching events (e.g., 10:00–11:00 and 11:00–12:00) are NOT conflicts.
+    * Checks for overlapping events, including expanded recurrence occurrences.
     *
     * @param excludeId - Event ID to exclude from the check (used during updates)
     */
-   private async checkForConflicts(startTime: Date, endTime: Date, excludeId?: string) {
-      const conflicting = await this.prisma.event.findFirst({
+   private async checkForConflicts(
+      startTime: Date,
+      endTime: Date,
+      recurrenceRule: string | null,
+      recurrenceEnd: Date | null,
+      excludeId?: string
+   ) {
+      // Determine the full time range we need to check
+      const conflictWindowStart = startTime;
+      const conflictWindowEnd = recurrenceEnd ?? endTime;
+
+      // Fetch all candidate events that could possibly overlap
+      const candidates = await this.prisma.event.findMany({
          where: {
-            startTime: { lt: endTime },
-            endTime: { gt: startTime },
             ...(excludeId && { id: { not: excludeId } }),
+            OR: [
+               // Non-recurring that overlap the conflict window
+               {
+                  recurrenceRule: null,
+                  startTime: { lt: conflictWindowEnd },
+                  endTime: { gt: conflictWindowStart },
+               },
+               // Recurring whose series spans the conflict window
+               {
+                  recurrenceRule: { not: null },
+                  startTime: { lt: conflictWindowEnd },
+                  recurrenceEnd: { gt: conflictWindowStart },
+               },
+            ],
          },
-         select: { id: true, title: true, startTime: true, endTime: true },
+         select: {
+            id: true,
+            title: true,
+            startTime: true,
+            endTime: true,
+            timezone: true,
+            recurrenceRule: true,
+            recurrenceEnd: true,
+            createdAt: true,
+            updatedAt: true,
+         },
       });
 
-      if (conflicting) {
-         throw new ConflictException({
-            message: 'Event conflicts with an existing event',
-            conflictingEvent: conflicting,
-         });
+      // Build the new event's occurrences
+      const newEventTemplate = {
+         id: 'new',
+         title: '',
+         startTime,
+         endTime,
+         timezone: '',
+         recurrenceRule,
+         recurrenceEnd,
+         createdAt: new Date(),
+         updatedAt: new Date(),
+      };
+      const newOccurrences = expandRecurrences(
+         newEventTemplate,
+         conflictWindowStart,
+         conflictWindowEnd
+      );
+
+      // Check each candidate's occurrences against each new occurrence
+      for (const candidate of candidates) {
+         const candidateOccurrences = expandRecurrences(
+            candidate,
+            conflictWindowStart,
+            conflictWindowEnd
+         );
+
+         for (const newOcc of newOccurrences) {
+            for (const existingOcc of candidateOccurrences) {
+               if (
+                  newOcc.startTime < existingOcc.endTime &&
+                  existingOcc.startTime < newOcc.endTime
+               ) {
+                  throw new ConflictException({
+                     message: 'Event conflicts with an existing event',
+                     conflictingEvent: {
+                        id: candidate.id,
+                        title: candidate.title,
+                        occurrenceStart: existingOcc.startTime,
+                        occurrenceEnd: existingOcc.endTime,
+                     },
+                  });
+               }
+            }
+         }
       }
    }
 }

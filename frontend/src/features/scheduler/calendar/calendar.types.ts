@@ -7,6 +7,8 @@ export interface BackendEvent {
    startTime: string;
    endTime: string;
    timezone: string;
+   recurrenceRule: string | null;
+   recurrenceEnd: string | null;
    createdAt: string;
    updatedAt: string;
 }

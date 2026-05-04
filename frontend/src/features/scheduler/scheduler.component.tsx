@@ -41,15 +41,21 @@ export function SchedulerComponent() {
       (info: EventClickArg) => {
          const event = events.find((e) => e.id === info.event.id);
          if (!event) return;
+
+         // Use id.split('_')[0] to get the real DB UUID for PATCH/DELETE
+         const dbId = event.id.split('_')[0];
+
          setDialog({
             open: true,
             mode: 'edit',
             initialData: {
-               id: event.id,
+               id: dbId,
                title: event.title,
                startTime: event.startTime,
                endTime: event.endTime,
                timezone: event.timezone,
+               recurrenceRule: event.recurrenceRule ?? undefined,
+               recurrenceEnd: event.recurrenceEnd ?? undefined,
             },
          });
       },
@@ -61,7 +67,10 @@ export function SchedulerComponent() {
       title: e.title,
       start: e.startTime,
       end: e.endTime,
-      extendedProps: { timezone: e.timezone },
+      extendedProps: {
+         timezone: e.timezone,
+         recurrenceRule: e.recurrenceRule,
+      },
    }));
 
    if (error) {
